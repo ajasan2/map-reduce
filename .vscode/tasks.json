@@ -1,0 +1,48 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build and Deploy Master",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "kubectl delete deployment/unstable-master || true && kubectl delete deployment/master || true && go build -o cmd/master/master cmd/master/master.go && docker build -t master:latest -f docker/Dockerfile.master . && kind load docker-image master:latest --name mapreduce && kubectl apply -f cmd/master/master.yaml"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build and Deploy Worker",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "kubectl delete deployment/unstable-worker || true && kubectl delete deployment/worker || true && go build -o cmd/worker/worker cmd/worker/worker.go && docker build -t worker:latest -f docker/Dockerfile.worker . && kind load docker-image worker:latest --name mapreduce && kubectl apply -f cmd/worker/worker.yaml"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build and Deploy BOTH",
+            "dependsOn": ["Build and Deploy Worker", "Build and Deploy Master"],
+            "dependsOrder": "sequence",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Submit mapreduce job",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "./mapreduce-cli submit --map-tasks 3 --reduce-tasks 3 --master http://172.18.0.2:30001"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+    ]
+}

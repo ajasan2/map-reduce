@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option go_package = "mapreduce/protos";
+
+package mapreduce;
+
+// Service definitions
+service MasterWorker {
+  rpc ExecuteMap (Shard) returns (Response) {}
+  rpc ExecuteReduce (ReduceRequest) returns (Response) {}
+}
+
+service MasterMaster {
+  rpc PushState (State) returns (Response) {}
+}
+
+// Message definitions
+message File {
+    string name = 1;
+    int64 size = 2;
+    int64 start_offset = 3;
+    int64 end_offset = 4;
+}
+
+message Shard {
+  int64 shard_id = 1;
+  int64 num_reducers = 2;
+  repeated File files = 3;
+  string input_container = 4;  // Add this
+}
+
+message ReduceRequest {
+  int64 reducer_id = 1;
+}
+
+message Response {
+  string outcome = 1;
+}
+
+message State {
+  map<string, Worker> workers = 1;
+  repeated Shard map_tasks = 2;
+  repeated ReduceRequest reduce_tasks = 3;
+  repeated WorkerStatus worker_statuses = 4;
+  string phase = 5;  
+}
+
+message Worker {
+  oneof task {
+    Shard map = 1;
+    ReduceRequest reduce = 2;
+  }
+  int64 start_execution = 3;
+  int64 end_execution = 4;  // Adding end_execution from WorkerStatus
+}
+
+message WorkerStatus {
+  string address = 1;
+  oneof task {
+    Shard map = 3;
+    ReduceRequest reduce = 4;
+  }
+  int64 start_exection = 5;
+  int64 end_execution = 6;
+}
